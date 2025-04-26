@@ -9,18 +9,10 @@ import sqlite3
 from datetime import datetime
 import streamlit_authenticator as stauth
 
-# بيانات المستخدمين - تم تعديلها حسب الشكل الصحيح
+# بيانات المستخدمين - يمكن تعديل هذا الجزء ليشمل المستخدمين الخاصين بك فقط
 users = {
-    "usernames": {
-        "hruser": {
-            "name": "HR User",
-            "password": "Concordpassword78$"
-        },
-        "sara": {
-            "name": "Sara",
-            "password": "Concordpassword78$"
-        }
-    }
+    "user1": {"name": "HRUSER", "password": "Concordpassword78$"},
+    "user2": {"name": "Sara", "password": "Concordpassword78$"},
 }
 
 # إعداد صفحة الدخول
