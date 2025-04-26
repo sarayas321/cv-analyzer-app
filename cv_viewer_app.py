@@ -9,14 +9,16 @@ import sqlite3
 from datetime import datetime
 import streamlit_authenticator as stauth
 
-# بيانات المستخدمين - يمكن تعديل هذا الجزء ليشمل المستخدمين الخاصين بك فقط
-users = {
-    "user1": {"name": "HRUSER", "password": "Concordpassword78$"},
-    "user2": {"name": "Sara", "password": "Concordpassword78$"},
+# بيانات المستخدمين - يجب تعديل هذا الجزء لتناسب المكتبة
+credentials = {
+    "usernames": {
+        "user1": {"name": "HRUSER", "password": "Concordpassword78$"},
+        "user2": {"name": "Sara", "password": "Concordpassword78$"},
+    }
 }
 
 # إعداد صفحة الدخول
-authenticator = stauth.Authenticate(users, "cv-analyzer", "abcdef", cookie_expiry_days=30)
+authenticator = stauth.Authenticate(credentials, "cv-analyzer", "abcdef", cookie_expiry_days=30)
 
 # إجراء التحقق من الدخول
 name, authentication_status, username = authenticator.login("Login", "main")  # تأكد أن هذه الدالة صحيحة
@@ -147,3 +149,4 @@ else:
         st.error("Username/password is incorrect")
     elif authentication_status is None:
         st.warning("Please enter your username and password")
+
