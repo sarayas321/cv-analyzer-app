@@ -7,145 +7,165 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 import sqlite3
 from datetime import datetime
-import streamlit as st
 import streamlit_authenticator as stauth
-
-# بيانات المستخدمين - يمكن تعديل هذا الجزء ليشمل المستخدمين الخاصين بك فقط
-users = {
-    "user1": {"name": "HRUSER", "password": "Concordpassword78$"},
-    "user2": {"name": "Sara", "password": "Concordpassword78$"},
-}
-
-# إعداد صفحة الدخول
-authenticator = stauth.Authenticate(users, "cv-analyzer", "abcdef", cookie_expiry_days=30)
-
-# إجراء التحقق من الدخول
-name, authentication_status, username = authenticator.login("Login", "main")
-
-# التحقق إذا كان المستخدم مسجل دخول
-if authentication_status:
-    st.write(f"Welcome {name}!")
-    # باقي الكود هنا
-else:
-    if authentication_status is False:
-        st.error("Username/password is incorrect")
-    elif authentication_status is None:
-        st.warning("Please enter your username and password")
-
-
-# --- تدريب النموذج من بيانات التدريب ---
-df_train = pd.read_csv("training_data.csv")
-vectorizer = TfidfVectorizer(stop_words='english')
-X = vectorizer.fit_transform(df_train["Resume_Text"])
-y = df_train["Match"]
-model = LogisticRegression(class_weight='balanced')
-model.fit(X, y)
-
-# --- تعريف مجموعات الوظائف ---
-job_groups = {
-    "تحليل البيانات": ["Data Analyst", "Business Analyst", "Reporting Analyst"],
-    "تطوير برمجيات": ["Software Developer", "Backend Engineer", "Full Stack Developer"],
-    "دعم فني": ["IT Support", "Helpdesk", "Technical Support"],
-    "هندسة نظم": ["Systems Engineer", "Infrastructure Engineer", "DevOps"],
-    "إدارة مشاريع": ["Project Manager", "Project Coordinator", "Scrum Master"],
-    "وظائف التأمين": ["Insurance Specialist", "Insurance Analyst", "Underwriter", "Claims Processor", "Insurance Coordinator"]
-}
-
-# --- تحميل بيانات التحليل السابقة ---
-df = pd.read_excel("batch_prediction_by_city.xlsx")
-
-st.title("📋 لوحة إدارة السير الذاتية")
-
-# --- اختيار المدينة والوظيفة ---
-cities = sorted(df["City"].dropna().unique())
-selected_city = st.selectbox("🏙️ اختر المدينة", cities)
-
-selected_job_group = st.selectbox("🧳 اختر نوع الوظيفة", list(job_groups.keys()))
-related_titles = job_groups[selected_job_group]
-
-# --- تصفية البيانات وعرضها ---
-filtered_df = df[
-    (df["City"] == selected_city) &
-    (df["Job_Title"].isin(related_titles))
-]
-
-st.write(f"🔍 عدد السير المطابقة: {len(filtered_df)}")
-st.dataframe(filtered_df)
-
-# --- تحميل البيانات كـ Excel ---
 from io import BytesIO
-output = BytesIO()
-with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-    filtered_df.to_excel(writer, index=False, sheet_name='Resumes')
-output.seek(0)
 
-st.download_button(
-    label="📥 تحميل النتائج كـ Excel",
-    data=output,
-    file_name=f"{selected_city}_{selected_job_group}_resumes.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+# ======================= #
+# --- إعداد صفحة الدخول --- #
+# ======================= #
+
+# بيانات المستخدمين
+users = {
+    "usernames": {
+        "HRUSER": {
+            "name": "HR User",
+            "password": "Concordpassword78$"
+        },
+        "Sara": {
+            "name": "Sara Samkari",
+            "password": "Concordpassword78$"
+        }
+    }
+}
+
+# إعداد صفحة تسجيل الدخول
+authenticator = stauth.Authenticate(
+    users,
+    "cv-analyzer",
+    "abcdef",
+    cookie_expiry_days=30,
+    auto_hash=False  # بدون تشفير مبدئيًا، نأمنه لاحقًا
 )
 
-# --- إنشاء قاعدة البيانات وجدول التخزين ---
-conn = sqlite3.connect("cv_results.db", check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS resumes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        file_name TEXT,
-        city TEXT,
-        job_group TEXT,
-        result TEXT,
-        timestamp TEXT
+# واجهة تسجيل الدخول
+name, authentication_status, username = authenticator.login("Login", "main")
+
+if authentication_status == False:
+    st.error("❌ اسم المستخدم أو كلمة المرور غير صحيحة")
+elif authentication_status == None:
+    st.warning("⚠️ الرجاء إدخال اسم المستخدم وكلمة المرور")
+elif authentication_status:
+    st.success(f"مرحبًا بك، {name} 👋")
+    
+    # ======================= #
+    # --- هنا يبدأ التطبيق --- #
+    # ======================= #
+
+    # --- تدريب النموذج باستخدام بيانات التدريب ---
+    df_train = pd.read_csv("training_data.csv")
+
+    vectorizer = TfidfVectorizer(stop_words='english')
+    X = vectorizer.fit_transform(df_train["Resume_Text"])
+    y = df_train["Match"]
+
+    model = LogisticRegression(class_weight='balanced')
+    model.fit(X, y)
+
+    # --- تعريف مجموعات الوظائف ---
+    job_groups = {
+        "تحليل البيانات": ["Data Analyst", "Business Analyst", "Reporting Analyst"],
+        "تطوير برمجيات": ["Software Developer", "Backend Engineer", "Full Stack Developer"],
+        "دعم فني": ["IT Support", "Helpdesk", "Technical Support"],
+        "هندسة نظم": ["Systems Engineer", "Infrastructure Engineer", "DevOps"],
+        "إدارة مشاريع": ["Project Manager", "Project Coordinator", "Scrum Master"],
+        "وظائف التأمين": ["Insurance Specialist", "Insurance Analyst", "Underwriter", "Claims Processor", "Insurance Coordinator"]
+    }
+
+    # --- تحميل البيانات السابقة ---
+    df = pd.read_excel("batch_prediction_by_city.xlsx")
+
+    st.title("📋 لوحة إدارة السير الذاتية")
+
+    # --- اختيار المدينة والوظيفة ---
+    cities = sorted(df["City"].dropna().unique())
+    selected_city = st.selectbox("🏙️ اختر المدينة", cities)
+
+    selected_job_group = st.selectbox("🧳 اختر نوع الوظيفة", list(job_groups.keys()))
+    related_titles = job_groups[selected_job_group]
+
+    # --- تصفية البيانات وعرضها ---
+    filtered_df = df[
+        (df["City"] == selected_city) &
+        (df["Job_Title"].isin(related_titles))
+    ]
+
+    st.write(f"🔍 عدد السير المطابقة: {len(filtered_df)}")
+    st.dataframe(filtered_df)
+
+    # --- تحميل البيانات كـ Excel ---
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        filtered_df.to_excel(writer, index=False, sheet_name='Resumes')
+    output.seek(0)
+
+    st.download_button(
+        label="📥 تحميل النتائج كـ Excel",
+        data=output,
+        file_name=f"{selected_city}_{selected_job_group}_resumes.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-''')
-conn.commit()
 
-# --- رفع وتحليل سيرة جديدة ---
-st.header("📤 تحليل سيرة ذاتية جديدة")
+    # --- إنشاء قاعدة البيانات وجدول التخزين ---
+    conn = sqlite3.connect("cv_results.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS resumes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_name TEXT,
+            city TEXT,
+            job_group TEXT,
+            result TEXT,
+            timestamp TEXT
+        )
+    ''')
+    conn.commit()
 
-uploaded_file = st.file_uploader("ارفع سيرة ذاتية (PDF أو Word)", type=["pdf", "docx"])
+    # --- رفع وتحليل سيرة ذاتية جديدة ---
+    st.header("📤 تحليل سيرة ذاتية جديدة")
 
-def extract_text(file):
-    if file.name.endswith(".pdf"):
-        text = ""
-        with fitz.open(stream=file.read(), filetype="pdf") as doc:
-            for page in doc:
-                text += page.get_text()
-        return text
-    elif file.name.endswith(".docx"):
-        doc = Document(file)
-        return "\n".join([para.text for para in doc.paragraphs])
-    return None
+    uploaded_file = st.file_uploader("ارفع سيرة ذاتية (PDF أو Word)", type=["pdf", "docx"])
 
-if uploaded_file:
-    st.info(f"📄 تم رفع: {uploaded_file.name}")
-    resume_text = extract_text(uploaded_file)
+    def extract_text(file):
+        if file.name.endswith(".pdf"):
+            text = ""
+            with fitz.open(stream=file.read(), filetype="pdf") as doc:
+                for page in doc:
+                    text += page.get_text()
+            return text
+        elif file.name.endswith(".docx"):
+            doc = Document(file)
+            return "\n".join([para.text for para in doc.paragraphs])
+        return None
 
-    if resume_text:
-        vector = vectorizer.transform([resume_text])
-        prediction = model.predict(vector)[0]
-        result = "✅ مناسب" if prediction == 1 else "❌ غير مناسب"
-        st.success(f"النتيجة: {result}")
+    if uploaded_file:
+        st.info(f"📄 تم رفع: {uploaded_file.name}")
+        resume_text = extract_text(uploaded_file)
 
-        # --- حفظ النتيجة في قاعدة البيانات ---
-        cursor.execute('''
-            INSERT INTO resumes (file_name, city, job_group, result, timestamp)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
-            uploaded_file.name,
-            selected_city,
-            selected_job_group,
-            result,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ))
-        conn.commit()
-        st.info("📝 تم حفظ النتيجة في قاعدة البيانات.")
-    else:
-        st.warning("⚠️ لم نتمكن من قراءة النص من هذا الملف.")
+        if resume_text:
+            vector = vectorizer.transform([resume_text])
+            prediction = model.predict(vector)[0]
+            result = "✅ مناسب" if prediction == 1 else "❌ غير مناسب"
+            st.success(f"النتيجة: {result}")
 
-# --- لوحة عرض قاعدة البيانات ---
-st.header("📚 عرض السجلات المحفوظة")
+            # --- حفظ النتيجة في قاعدة البيانات ---
+            cursor.execute('''
+                INSERT INTO resumes (file_name, city, job_group, result, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                uploaded_file.name,
+                selected_city,
+                selected_job_group,
+                result,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ))
+            conn.commit()
+            st.info("📝 تم حفظ النتيجة في قاعدة البيانات.")
+        else:
+            st.warning("⚠️ لم نتمكن من قراءة النص من هذا الملف.")
 
-df_db = pd.read_sql_query("SELECT * FROM resumes ORDER BY timestamp DESC", conn)
-st.dataframe(df_db)
+    # --- لوحة عرض قاعدة البيانات ---
+    st.header("📚 عرض السجلات المحفوظة")
+
+    df_db = pd.read_sql_query("SELECT * FROM resumes ORDER BY timestamp DESC", conn)
+    st.dataframe(df_db)
+
