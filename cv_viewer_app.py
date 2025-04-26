@@ -21,7 +21,9 @@ credentials = {
 authenticator = stauth.Authenticate(credentials, "cv-analyzer", "abcdef", cookie_expiry_days=30)
 
 # إجراء التحقق من الدخول
-name, authentication_status, username = authenticator.login("Login", "main")  # تأكد أن هذه الدالة صحيحة
+# تعديل موقع الواجهة لتكون 'main' أو 'sidebar' أو 'unrendered'
+name, authentication_status, username = authenticator.login("Login", location="main")
+
 
 # التحقق إذا كان المستخدم مسجل دخول
 if authentication_status:
