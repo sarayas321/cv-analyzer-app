@@ -1,0 +1,7 @@
+streamlit
+pandas
+fitz
+PyMuPDF
+python-docx
+scikit-learn
+xlsxwriter
