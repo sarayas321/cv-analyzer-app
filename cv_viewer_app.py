@@ -22,7 +22,8 @@ authenticator = stauth.Authenticate(credentials, "cv-analyzer", "abcdef", cookie
 
 # إجراء التحقق من الدخول
 # تعديل موقع الواجهة لتكون 'main' أو 'sidebar' أو 'unrendered'
-name, authentication_status, username = authenticator.login("Login", location="main")
+name, authentication_status, username = authenticator.login("Login", location="sidebar")
+
 
 
 # التحقق إذا كان المستخدم مسجل دخول
