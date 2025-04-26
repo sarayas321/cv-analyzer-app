@@ -7,30 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 import sqlite3
 from datetime import datetime
-import streamlit_authenticator as stauth
-
-# بيانات المستخدمين - يمكن تعديل هذا الجزء ليشمل المستخدمين الخاصين بك فقط
-users = {
-    "user1": {"name": "HRUSER", "password": "Concordpassword78$"},
-    "user2": {"name": "Sara", "password": "Concordpassword78$"},
-}
-
-# إعداد صفحة الدخول
-authenticator = stauth.Authenticate(users, "cv-analyzer", "abcdef", cookie_expiry_days=30)
-
-# إجراء التحقق من الدخول
-name, authentication_status, username = authenticator.login("Login", location="main")  # تأكد من أن location محدد بشكل صحيح
-
-# التحقق إذا كان المستخدم مسجل دخول
-if authentication_status:
-    st.write(f"Welcome {name}!")
-    # باقي الكود هنا
-else:
-    if authentication_status is False:
-        st.error("Username/password is incorrect")
-    elif authentication_status is None:
-        st.warning("Please enter your username and password")
-
+from io import BytesIO
 
 # --- تدريب النموذج من بيانات التدريب ---
 df_train = pd.read_csv("training_data.csv")
@@ -72,7 +49,6 @@ st.write(f"🔍 عدد السير المطابقة: {len(filtered_df)}")
 st.dataframe(filtered_df)
 
 # --- تحميل البيانات كـ Excel ---
-from io import BytesIO
 output = BytesIO()
 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
     filtered_df.to_excel(writer, index=False, sheet_name='Resumes')
